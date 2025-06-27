@@ -1,4 +1,3 @@
-"use client"
 
 import { useMemo } from "react"
 import { useGetTransactionsByUserQuery } from "../services/api"
@@ -132,7 +131,7 @@ const Dashboard = () => {
             { period: "Today", data: summaries.today, emoji: "📅", color: "from-green-400 to-green-600" },
             { period: "This Week", data: summaries.week, emoji: "📊", color: "from-blue-400 to-blue-600" },
             { period: "This Month", data: summaries.month, emoji: "🗓️", color: "from-purple-400 to-purple-600" },
-          ].map((summary, index) => (
+          ].map((summary) => (
             <motion.div key={summary.period} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
               <Card className="overflow-hidden border-0 shadow-lg">
                 <div className={`h-2 bg-gradient-to-r ${summary.color}`} />
@@ -195,7 +194,7 @@ const Dashboard = () => {
                         dataKey="amount"
                         label={({ category, amount }) => `${category}: Rs${amount.toFixed(0)}`}
                       >
-                        {categoryBreakdown.map((entry, index) => (
+                        {categoryBreakdown.map((_, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
