@@ -4,7 +4,7 @@ import {createApi, fetchBaseQuery} from '@reduxjs/toolkit/query/react';
 export const api = createApi({
   reducerPath: 'api',
     baseQuery: fetchBaseQuery({
-        baseUrl: import.meta.env.VITE_API_URL || 'https://lazyledger-backend.onrender.com/',
+        baseUrl: import.meta.env.VITE_API_URL || 'https://lazyledger-backend.onrender.com/api/',
         prepareHeaders: (headers, {getState}) => {
         const state = getState() as { auth?: { token?: string } };
         const token = state.auth?.token;
