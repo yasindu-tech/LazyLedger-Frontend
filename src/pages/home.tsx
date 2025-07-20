@@ -1,32 +1,14 @@
+"use client"
 
-import { motion, AnimatePresence } from "framer-motion"
+import { motion } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ArrowRight, Sparkles, Zap, Target, X } from "lucide-react"
+import { ArrowRight, Sparkles, Zap, Target } from "lucide-react"
 import { SignedIn, SignedOut, SignUpButton } from "@clerk/clerk-react"
 import { Link } from "react-router"
-import { useState, useEffect } from "react"
 
 const Home = () => {
-  const [showNewsPopup, setShowNewsPopup] = useState(false)
-
-  // Show popup after 2 seconds, hide after 5 seconds
-  useEffect(() => {
-    const showTimer = setTimeout(() => {
-      setShowNewsPopup(true)
-    }, 2000)
-
-    const hideTimer = setTimeout(() => {
-      setShowNewsPopup(false)
-    }, 7000)
-
-    return () => {
-      clearTimeout(showTimer)
-      clearTimeout(hideTimer)
-    }
-  }, [])
-
   const features = [
     {
       emoji: "✍️",
@@ -56,133 +38,6 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50">
-      {/* Animated News Popup */}
-      <AnimatePresence>
-        {showNewsPopup && (
-          <motion.div
-            initial={{ opacity: 0, y: -100, scale: 0.8 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -100, scale: 0.8 }}
-            transition={{
-              type: "spring",
-              damping: 20,
-              stiffness: 300,
-            }}
-            className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50"
-          >
-            <div className="relative">
-              {/* Main popup card */}
-              <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-1 rounded-2xl shadow-2xl">
-                <div className="bg-white rounded-xl p-4 relative overflow-hidden">
-                  {/* Animated background pattern */}
-                  <motion.div
-                    className="absolute inset-0 opacity-5"
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 20, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-                  >
-                    <div className="w-full h-full bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl"></div>
-                  </motion.div>
-
-                  {/* Close button */}
-                  <button
-                    onClick={() => setShowNewsPopup(false)}
-                    className="absolute top-2 right-2 w-6 h-6 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors"
-                  >
-                    <X className="w-3 h-3 text-gray-600" />
-                  </button>
-
-                  <div className="flex items-center gap-3 pr-6">
-                    {/* Animated icon */}
-                    <motion.div
-                      animate={{
-                        rotate: [0, 10, -10, 0],
-                        scale: [1, 1.1, 1],
-                      }}
-                      transition={{
-                        duration: 2,
-                        repeat: Number.POSITIVE_INFINITY,
-                        ease: "easeInOut",
-                      }}
-                      className="text-3xl"
-                    >
-                      🤖
-                    </motion.div>
-
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        {/* Pulsing NEW badge */}
-                        <motion.div
-                          animate={{ scale: [1, 1.1, 1] }}
-                          transition={{ duration: 1.5, repeat: Number.POSITIVE_INFINITY }}
-                          className="bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs font-bold px-2 py-1 rounded-full"
-                        >
-                          NEWS
-                        </motion.div>
-
-                        {/* Sparkle animation */}
-                        <motion.span
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 3, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-                          className="text-yellow-500"
-                        >
-                          ✨
-                        </motion.span>
-                      </div>
-
-                      <h3 className="font-bold text-gray-800 text-sm">AI Insights Coming Soon!</h3>
-                      <p className="text-xs text-gray-600">Get personalized financial advice from our trained AI</p>
-                    </div>
-
-                    {/* Animated arrow */}
-                    <motion.div
-                      animate={{ x: [0, 5, 0] }}
-                      transition={{ duration: 1.5, repeat: Number.POSITIVE_INFINITY }}
-                      className="text-purple-500"
-                    >
-                      <ArrowRight className="w-4 h-4" />
-                    </motion.div>
-                  </div>
-
-                  {/* Progress bar animation */}
-                  <motion.div
-                    className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-b-xl"
-                    initial={{ width: "0%" }}
-                    animate={{ width: "100%" }}
-                    transition={{ duration: 5, ease: "linear" }}
-                  />
-                </div>
-              </div>
-
-              {/* Floating particles around popup */}
-              <motion.div
-                className="absolute -top-2 -left-2 w-2 h-2 bg-yellow-400 rounded-full"
-                animate={{
-                  y: [-5, -15, -5],
-                  opacity: [0.5, 1, 0.5],
-                }}
-                transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, delay: 0.5 }}
-              />
-              <motion.div
-                className="absolute -top-1 -right-3 w-1.5 h-1.5 bg-pink-400 rounded-full"
-                animate={{
-                  y: [-3, -12, -3],
-                  opacity: [0.3, 1, 0.3],
-                }}
-                transition={{ duration: 2.5, repeat: Number.POSITIVE_INFINITY, delay: 1 }}
-              />
-              <motion.div
-                className="absolute -bottom-2 -right-1 w-2 h-2 bg-blue-400 rounded-full"
-                animate={{
-                  y: [5, 15, 5],
-                  opacity: [0.4, 1, 0.4],
-                }}
-                transition={{ duration: 2.2, repeat: Number.POSITIVE_INFINITY, delay: 0.8 }}
-              />
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Hero Section */}
       <section className="relative overflow-hidden py-20 px-6">
         <div className="max-w-6xl mx-auto text-center">
@@ -195,61 +50,6 @@ const Home = () => {
             <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
               LazyLedger 💸
             </h1>
-
-            {/* Animated New Feature Announcement */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              className="mb-6"
-            >
-              <div className="inline-flex items-center gap-3 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white px-6 py-3 rounded-full shadow-lg relative overflow-hidden">
-                {/* Animated background shimmer */}
-                <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-                  animate={{ x: [-100, 300] }}
-                  transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-                />
-
-                {/* Pulsing dot */}
-                <motion.div
-                  className="w-2 h-2 bg-yellow-400 rounded-full"
-                  animate={{ scale: [1, 1.3, 1] }}
-                  transition={{ duration: 1.5, repeat: Number.POSITIVE_INFINITY }}
-                />
-
-                <span className="font-semibold text-sm relative z-10">NEW</span>
-
-                {/* Sparkle animation */}
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 3, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-                  className="text-yellow-300"
-                >
-                  ✨
-                </motion.div>
-
-                <span className="text-sm relative z-10">AI Insights Coming Soon!</span>
-
-                {/* Floating particles */}
-                <motion.div
-                  className="absolute -top-1 -right-1 w-1 h-1 bg-yellow-400 rounded-full"
-                  animate={{
-                    y: [-2, -8, -2],
-                    opacity: [0, 1, 0],
-                  }}
-                  transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, delay: 0.5 }}
-                />
-                <motion.div
-                  className="absolute -bottom-1 -left-1 w-1 h-1 bg-pink-300 rounded-full"
-                  animate={{
-                    y: [2, 8, 2],
-                    opacity: [0, 1, 0],
-                  }}
-                  transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, delay: 1 }}
-                />
-              </div>
-            </motion.div>
 
             <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
               Stop wrestling with complicated finance apps. Just type "Coffee -5" and watch the magic happen!

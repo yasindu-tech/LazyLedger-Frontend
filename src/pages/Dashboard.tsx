@@ -1,11 +1,14 @@
+"use client"
 
-import { useMemo } from "react"
+import { useMemo, useState, useEffect } from "react"
 import { useGetTransactionsByUserQuery } from "../services/api"
 import { useUser } from "@clerk/clerk-react"
 import { motion } from "framer-motion"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
   PieChart,
   Pie,
@@ -18,15 +21,119 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts"
-import { TrendingUp, TrendingDown } from "lucide-react"
+import { TrendingUp, TrendingDown, Brain, Info, Plus } from "lucide-react"
+import { Link } from "react-router"
 import {
   parseTransactionText,
   calculateSummary,
   getCategoryBreakdown,
   type Transaction,
-} from "@/utils/transaction-parser"
+} from "../utils/transaction-parser"
 
 const COLORS = ["#8B5CF6", "#06B6D4", "#10B981", "#F59E0B", "#EF4444", "#EC4899", "#6366F1"]
+
+// Custom hook for AI insights with generation and fetching
+const useAIInsights = (userId: string | undefined) => {
+  const [insights, setInsights] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [dailyGenerationCount, setDailyGenerationCount] = useState(0)
+  const [lastGenerationDate, setLastGenerationDate] = useState<string>("")
+
+  // Check local storage for daily generation limit
+  useEffect(() => {
+    const today = new Date().toDateString()
+    const storedDate = localStorage.getItem("lastInsightGenerationDate")
+    const storedCount = localStorage.getItem("dailyInsightCount")
+
+    if (storedDate === today) {
+      setDailyGenerationCount(Number.parseInt(storedCount || "0"))
+    } else {
+      setDailyGenerationCount(0)
+      localStorage.setItem("lastInsightGenerationDate", today)
+      localStorage.setItem("dailyInsightCount", "0")
+    }
+    setLastGenerationDate(today)
+  }, [])
+
+  // Fetch latest insights on component mount
+  useEffect(() => {
+    if (!userId) return
+    fetchLatestInsights()
+  }, [userId])
+
+  const fetchLatestInsights = async () => {
+    if (!userId) return
+
+    setIsLoading(true)
+    setError(null)
+    try {
+      const response = await fetch(`https://lazyledger-parser-production.up.railway.app/insights/${userId}/latest`)
+      if (response.ok) {
+        const data = await response.json()
+        if (data.insight) {
+          setInsights(data.insight)
+        } else {
+          setInsights(null)
+        }
+      } else if (response.status === 404) {
+        setInsights(null) // No insights found
+      } else {
+        throw new Error("Failed to fetch insights")
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load insights")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const generateInsights = async () => {
+    if (!userId || dailyGenerationCount >= 3) return
+
+    setIsGenerating(true)
+    setError(null)
+    try {
+      const response = await fetch(`https://lazyledger-parser-production.up.railway.app/insights/${userId}`, {
+        method: "POST",
+      })
+      if (!response.ok) {
+        throw new Error("Failed to generate insights")
+      }
+      const data = await response.json()
+
+      // Update insights with new data
+      const newInsight = {
+        insight_id: Date.now(), // Temporary ID
+        user_id: userId,
+        title: `Financial Analysis - ${new Date().toLocaleDateString()}`,
+        content: data.insights,
+        created_at: new Date().toISOString(),
+      }
+      setInsights(newInsight)
+
+      // Update generation count
+      const newCount = dailyGenerationCount + 1
+      setDailyGenerationCount(newCount)
+      localStorage.setItem("dailyInsightCount", newCount.toString())
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to generate insights")
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  return {
+    insights,
+    isLoading,
+    isGenerating,
+    error,
+    generateInsights,
+    canGenerate: dailyGenerationCount < 3,
+    remainingGenerations: 3 - dailyGenerationCount,
+  }
+}
 
 const Dashboard = () => {
   const { user } = useUser()
@@ -34,27 +141,24 @@ const Dashboard = () => {
     skip: !user?.id,
   })
 
-  console.log("Raw Data:", rawData)
+  // Fetch AI insights
+  const {
+    insights,
+    isLoading: insightsLoading,
+    isGenerating,
+    error: insightsError,
+    generateInsights,
+    canGenerate,
+    remainingGenerations,
+  } = useAIInsights(user?.id)
+
   const transactions = useMemo(() => {
     if (!rawData) return []
 
     const allTransactions: Transaction[] = []
     rawData.forEach((record: any) => {
-      if (record.raw_text) {
-        const parsed = parseTransactionText(record.raw_text, record.date)
-        allTransactions.push(...parsed)
-      } else if (record.amount && record.type && record.category) {
-        // Handle already-parsed transactions from backend
-        allTransactions.push({
-          id: record.transaction_id || record.id || Math.random().toString(),
-          amount: typeof record.amount === "string" ? parseFloat(record.amount) : record.amount,
-          date: record.date,
-          type: record.type.toLowerCase(),
-          category: record.category,
-          description: record.description || record.category,
-          emoji: "💸", // Optionally map category to emoji if you want
-        })
-      }
+      const parsed = parseTransactionText(record.raw_text, record.date)
+      allTransactions.push(...parsed)
     })
 
     return allTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
@@ -131,7 +235,7 @@ const Dashboard = () => {
             { period: "Today", data: summaries.today, emoji: "📅", color: "from-green-400 to-green-600" },
             { period: "This Week", data: summaries.week, emoji: "📊", color: "from-blue-400 to-blue-600" },
             { period: "This Month", data: summaries.month, emoji: "🗓️", color: "from-purple-400 to-purple-600" },
-          ].map((summary) => (
+          ].map((summary, index) => (
             <motion.div key={summary.period} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
               <Card className="overflow-hidden border-0 shadow-lg">
                 <div className={`h-2 bg-gradient-to-r ${summary.color}`} />
@@ -144,11 +248,11 @@ const Dashboard = () => {
                 <CardContent className="space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600">Income</span>
-                    <span className="font-semibold text-green-600">+Rs{summary.data.totalIncome.toFixed(2)}</span>
+                    <span className="font-semibold text-green-600">+${summary.data.totalIncome.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600">Expenses</span>
-                    <span className="font-semibold text-red-600">-Rs{summary.data.totalExpenses.toFixed(2)}</span>
+                    <span className="font-semibold text-red-600">-${summary.data.totalExpenses.toFixed(2)}</span>
                   </div>
                   <Separator />
                   <div className="flex justify-between items-center">
@@ -160,7 +264,7 @@ const Dashboard = () => {
                         <TrendingDown className="w-4 h-4 text-red-600" />
                       )}
                       <span className={`font-bold ${summary.data.netAmount >= 0 ? "text-green-600" : "text-red-600"}`}>
-                        Rs{Math.abs(summary.data.netAmount).toFixed(2)}
+                        ${Math.abs(summary.data.netAmount).toFixed(2)}
                       </span>
                     </div>
                   </div>
@@ -170,10 +274,187 @@ const Dashboard = () => {
           ))}
         </motion.div>
 
+        {/* AI Insights Section */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+          <Card className="border-0 shadow-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white overflow-hidden">
+            <div className="absolute inset-0 bg-black/10"></div>
+            <CardHeader className="relative z-10">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <motion.div
+                    animate={{ rotate: [0, 10, -10, 0] }}
+                    transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
+                  >
+                    <Brain className="w-8 h-8" />
+                  </motion.div>
+                  <div>
+                    <CardTitle className="text-2xl">AI-Powered Insights</CardTitle>
+                    <CardDescription className="text-indigo-100">
+                      Personalized financial insights powered by our trained AI model
+                    </CardDescription>
+                  </div>
+                </div>
+
+                {transactions.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      onClick={generateInsights}
+                      disabled={!canGenerate || isGenerating}
+                      className="bg-white/20 hover:bg-white/30 text-white border border-white/30"
+                    >
+                      {isGenerating ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          Analyzing...
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <Brain className="w-4 h-4" />
+                          Generate Insights
+                        </div>
+                      )}
+                    </Button>
+                    <div className="text-xs text-indigo-200">{remainingGenerations}/3 left today</div>
+                  </div>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent className="relative z-10">
+              {transactions.length === 0 ? (
+                // No transactions state
+                <div className="text-center py-8">
+                  <div className="text-6xl mb-4">📊</div>
+                  <h3 className="text-xl font-semibold mb-3">Start Tracking to See Insights</h3>
+                  <p className="text-indigo-100 mb-6 max-w-md mx-auto">
+                    Add some transactions to unlock personalized AI insights about your spending patterns and financial
+                    habits.
+                  </p>
+                  <Link to="/track">
+                    <Button className="bg-white text-purple-600 hover:bg-gray-100 font-semibold">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Transactions
+                    </Button>
+                  </Link>
+                </div>
+              ) : isLoading ? (
+                // Loading state
+                <div className="text-center py-8">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                    className="text-4xl mb-4"
+                  >
+                    🤖
+                  </motion.div>
+                  <p className="text-indigo-100">Loading your insights...</p>
+                </div>
+              ) : !insights ? (
+                // No insights available
+                <div className="text-center py-8">
+                  <div className="text-6xl mb-4">🔮</div>
+                  <h3 className="text-xl font-semibold mb-3">No Insights Available</h3>
+                  <p className="text-indigo-100 mb-6 max-w-md mx-auto">
+                    Generate your first AI-powered financial insights to understand your spending patterns and get
+                    personalized recommendations.
+                  </p>
+                  {canGenerate && (
+                    <Button
+                      onClick={generateInsights}
+                      disabled={isGenerating}
+                      className="bg-white text-purple-600 hover:bg-gray-100 font-semibold"
+                    >
+                      {isGenerating ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
+                          Generating...
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <Brain className="w-4 h-4" />
+                          Generate First Insights
+                        </div>
+                      )}
+                    </Button>
+                  )}
+                </div>
+              ) : insightsError ? (
+                // Error state
+                <div className="text-center py-8">
+                  <div className="text-4xl mb-4">😅</div>
+                  <p className="text-indigo-100 mb-4">Oops! Couldn't load insights right now.</p>
+                  <p className="text-sm text-indigo-200">Error: {insightsError}</p>
+                </div>
+              ) : (
+                // Insights content
+                <div className="space-y-6">
+                  {/* Insights Header */}
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-semibold text-lg flex items-center gap-2">
+                      📋 {insights.title || "Financial Analysis"}
+                    </h4>
+                    <div className="text-xs text-indigo-200">{new Date(insights.created_at).toLocaleDateString()}</div>
+                  </div>
+
+                  {/* Parse and display insights */}
+                  <div className="space-y-4">
+                    {insights.content
+                      .split("\n\n")
+                      .map((section: string, index: number) => {
+                        if (section.startsWith("Summary:")) {
+                          return (
+                            <div key={index} className="bg-white/10 backdrop-blur-sm rounded-xl p-6">
+                              <h5 className="font-semibold mb-3 flex items-center gap-2">📊 Financial Summary</h5>
+                              <p className="text-indigo-100 leading-relaxed">{section.replace("Summary: ", "")}</p>
+                            </div>
+                          )
+                        } else if (section.startsWith("Insight")) {
+                          const insightNumber = section.match(/Insight (\d+):/)?.[1] || "1"
+                          const content = section.replace(/Insight \d+: /, "")
+                          const icons = ["🎯", "📈", "💰", "✨", "🔍", "📊"]
+
+                          return (
+                            <motion.div
+                              key={index}
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: index * 0.1 }}
+                              className="bg-white/10 backdrop-blur-sm rounded-lg p-4"
+                            >
+                              <div className="flex items-start gap-3">
+                                <div className="text-2xl">{icons[Number.parseInt(insightNumber) - 1] || "💡"}</div>
+                                <div>
+                                  <h6 className="font-medium mb-2 text-white">Insight {insightNumber}</h6>
+                                  <p className="text-indigo-100 text-sm leading-relaxed">{content}</p>
+                                </div>
+                              </div>
+                            </motion.div>
+                          )
+                        }
+                        return null
+                      })
+                      .filter(Boolean)}
+                  </div>
+
+                  {/* Enhanced Disclaimer */}
+                  <Alert className="bg-red-500/20 border-red-400/30 text-white">
+                    <Info className="h-4 w-4" />
+                    <AlertDescription className="text-red-100">
+                      <strong>Important Disclaimer:</strong> These insights are AI-generated based on your transaction
+                      patterns. The more data you track, the more accurate these insights become. However, AI analysis
+                      can sometimes be misleading or incomplete. Always use your own judgment and consider consulting
+                      with a financial advisor for important financial decisions.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+
         {/* Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Category Breakdown */}
-          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}>
             <Card className="border-0 shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -192,13 +473,13 @@ const Dashboard = () => {
                         cy="50%"
                         outerRadius={80}
                         dataKey="amount"
-                        label={({ category, amount }) => `${category}: Rs${amount.toFixed(0)}`}
+                        label={({ category, amount }) => `${category}: $${amount.toFixed(0)}`}
                       >
-                        {categoryBreakdown.map((_, index) => (
+                        {categoryBreakdown.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value: any) => [`Rs${value.toFixed(2)}`, "Amount"]} />
+                      <Tooltip formatter={(value: any) => [`$${value.toFixed(2)}`, "Amount"]} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
@@ -207,7 +488,7 @@ const Dashboard = () => {
           </motion.div>
 
           {/* Trend Chart */}
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}>
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }}>
             <Card className="border-0 shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -223,7 +504,7 @@ const Dashboard = () => {
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="date" />
                       <YAxis />
-                      <Tooltip formatter={(value: any) => [`Rs${value.toFixed(2)}`, ""]} />
+                      <Tooltip formatter={(value: any) => [`$${value.toFixed(2)}`, ""]} />
                       <Line
                         type="monotone"
                         dataKey="income"
@@ -249,7 +530,7 @@ const Dashboard = () => {
         {/* Top Categories & Recent Transactions */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Top 3 Categories */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
             <Card className="border-0 shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -264,7 +545,7 @@ const Dashboard = () => {
                     key={category.category}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.5 + index * 0.1 }}
+                    transition={{ delay: 0.6 + index * 0.1 }}
                     className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-gray-50 to-gray-100"
                   >
                     <div className="flex items-center gap-3">
@@ -275,7 +556,7 @@ const Dashboard = () => {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="font-bold text-lg">Rs{category.amount.toFixed(2)}</div>
+                      <div className="font-bold text-lg">${category.amount.toFixed(2)}</div>
                       <Badge variant={index === 0 ? "default" : "secondary"}>#{index + 1}</Badge>
                     </div>
                   </motion.div>
@@ -285,7 +566,7 @@ const Dashboard = () => {
           </motion.div>
 
           {/* Recent Transactions */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
             <Card className="border-0 shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -300,7 +581,7 @@ const Dashboard = () => {
                     key={transaction.id}
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.6 + index * 0.05 }}
+                    transition={{ delay: 0.7 + index * 0.05 }}
                     className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors"
                   >
                     <div className="flex items-center gap-3">
@@ -314,7 +595,7 @@ const Dashboard = () => {
                       <div
                         className={`font-semibold ${transaction.type === "income" ? "text-green-600" : "text-red-600"}`}
                       >
-                        {transaction.type === "income" ? "+" : "-"}Rs{transaction.amount.toFixed(2)}
+                        {transaction.type === "income" ? "+" : "-"}${transaction.amount.toFixed(2)}
                       </div>
                       <div className="text-xs text-gray-500">{new Date(transaction.date).toLocaleDateString()}</div>
                     </div>
@@ -326,7 +607,7 @@ const Dashboard = () => {
         </div>
 
         {/* Fun Stats */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}>
           <Card className="border-0 shadow-lg bg-gradient-to-r from-purple-500 to-blue-500 text-white">
             <CardContent className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
@@ -337,12 +618,12 @@ const Dashboard = () => {
                 </div>
                 <div>
                   <div className="text-2xl mb-2">💰</div>
-                  <div className="text-2xl font-bold">Rs{summaries.month.totalIncome.toFixed(0)}</div>
+                  <div className="text-2xl font-bold">${summaries.month.totalIncome.toFixed(0)}</div>
                   <div className="text-sm opacity-90">Monthly Income</div>
                 </div>
                 <div>
                   <div className="text-2xl mb-2">🛍️</div>
-                  <div className="text-2xl font-bold">Rs{summaries.month.totalExpenses.toFixed(0)}</div>
+                  <div className="text-2xl font-bold">${summaries.month.totalExpenses.toFixed(0)}</div>
                   <div className="text-sm opacity-90">Monthly Spending</div>
                 </div>
                 <div>

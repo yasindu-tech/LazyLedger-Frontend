@@ -1,3 +1,4 @@
+"use client"
 
 import { motion } from "framer-motion"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -8,6 +9,18 @@ import { SignUpButton, SignedIn, SignedOut } from "@clerk/clerk-react"
 import { Link } from "react-router"
 
 const HowItWorks = () => {
+  const examples = [
+    {
+      input: "Salary +5000\nPizza -12\nCoffee -4.50\nUber -25",
+      output: {
+        income: 5000,
+        expenses: 41.5,
+        categories: ["Salary", "Food", "Transport"],
+        transactions: 4,
+      },
+    },
+  ]
+
   const features = [
     {
       emoji: "🧠",
@@ -212,99 +225,6 @@ const HowItWorks = () => {
               </motion.div>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* Coming Soon - AI Insights */}
-      <section className="py-16 px-6 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 relative overflow-hidden">
-        {/* Background Pattern */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-10 left-10 w-20 h-20 border border-white rounded-full"></div>
-          <div className="absolute top-32 right-20 w-16 h-16 border border-white rounded-full"></div>
-          <div className="absolute bottom-20 left-32 w-12 h-12 border border-white rounded-full"></div>
-          <div className="absolute bottom-32 right-10 w-24 h-24 border border-white rounded-full"></div>
-        </div>
-
-        <div className="max-w-4xl mx-auto text-center text-white relative z-10">
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
-            {/* Coming Soon Badge */}
-            <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 mb-6">
-              <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
-              <span className="text-sm font-medium">Coming Soon</span>
-            </div>
-
-            <h2 className="text-4xl md:text-5xl font-bold mb-6">🤖 AI-Powered Insights</h2>
-
-            <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto leading-relaxed">
-              Get ready for the future of finance tracking! Our trained AI model will analyze your spending patterns and
-              provide personalized insights to help you make smarter money decisions.
-            </p>
-
-            {/* Feature Preview Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                <div className="text-3xl mb-3">📈</div>
-                <h3 className="font-semibold mb-2">Smart Predictions</h3>
-                <p className="text-sm opacity-80">
-                  AI will predict your monthly spending and warn you before you overspend
-                </p>
-              </div>
-
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                <div className="text-3xl mb-3">💡</div>
-                <h3 className="font-semibold mb-2">Personalized Tips</h3>
-                <p className="text-sm opacity-80">Get custom advice based on your unique spending habits and goals</p>
-              </div>
-
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                <div className="text-3xl mb-3">🎯</div>
-                <h3 className="font-semibold mb-2">Goal Tracking</h3>
-                <p className="text-sm opacity-80">
-                  AI will help you set realistic financial goals and track your progress
-                </p>
-              </div>
-            </div>
-
-            {/* AI Preview */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 mb-8 max-w-2xl mx-auto border border-white/20">
-              <div className="text-left">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-8 h-8 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full flex items-center justify-center">
-                    🤖
-                  </div>
-                  <span className="font-medium">LazyLedger AI</span>
-                </div>
-                <div className="space-y-2 text-sm">
-                  <p className="bg-white/10 rounded-lg p-3">
-                    "I noticed you spent 40% more on food this month. Would you like me to suggest some budget-friendly
-                    meal ideas?"
-                  </p>
-                  <p className="bg-white/10 rounded-lg p-3">
-                    "Great job! You're on track to save $500 this month. Keep it up! 🎉"
-                  </p>
-                  <p className="bg-white/10 rounded-lg p-3">
-                    "Based on your patterns, you might want to set aside $200 for entertainment next month."
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Waitlist CTA */}
-            <div className="space-y-4">
-              <p className="text-lg opacity-90">Want early access when AI Insights launches?</p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
-                <input
-                  type="email"
-                  placeholder="your@email.com"
-                  className="flex-1 px-4 py-3 rounded-lg bg-white/20 backdrop-blur-sm border border-white/30 text-white placeholder-white/70 focus:outline-none focus:border-white/50"
-                />
-                <Button className="bg-white text-purple-600 hover:bg-gray-100 px-6 py-3 font-semibold">
-                  Join Waitlist ✨
-                </Button>
-              </div>
-              <p className="text-xs opacity-70">Be the first to experience AI-powered finance insights!</p>
-            </div>
-          </motion.div>
         </div>
       </section>
 
