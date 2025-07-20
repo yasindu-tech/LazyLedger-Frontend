@@ -67,7 +67,12 @@ const useAIInsights = (userId: string | undefined) => {
     setIsLoading(true)
     setError(null)
     try {
-      const response = await fetch(`https://lazyledger-parser-production.up.railway.app/insights/${userId}/latest`)
+      const response = await fetch(`https://lazyledger-parser-production.up.railway.app/insights/${userId}/latest`, {
+        mode: 'cors',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
       if (response.ok) {
         const data = await response.json()
         if (data.insight) {
@@ -81,7 +86,9 @@ const useAIInsights = (userId: string | undefined) => {
         throw new Error("Failed to fetch insights")
       }
     } catch (err) {
+      console.error('Failed to fetch insights:', err)
       setError(err instanceof Error ? err.message : "Failed to load insights")
+      setInsights(null)
     } finally {
       setIsLoading(false)
     }
@@ -95,6 +102,10 @@ const useAIInsights = (userId: string | undefined) => {
     try {
       const response = await fetch(`https://lazyledger-parser-production.up.railway.app/insights/${userId}`, {
         method: "POST",
+        mode: 'cors',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       })
       if (!response.ok) {
         throw new Error("Failed to generate insights")
@@ -116,6 +127,7 @@ const useAIInsights = (userId: string | undefined) => {
       setDailyGenerationCount(newCount)
       localStorage.setItem("dailyInsightCount", newCount.toString())
     } catch (err) {
+      console.error('Failed to generate insights:', err)
       setError(err instanceof Error ? err.message : "Failed to generate insights")
     } finally {
       setIsGenerating(false)
@@ -379,11 +391,35 @@ const Dashboard = () => {
                 // Error state
                 <div className="text-center py-8">
                   <div className="text-4xl mb-4">😅</div>
-                  <p className="text-indigo-100 mb-4">Oops! Couldn't load insights right now.</p>
-                  <p className="text-sm text-indigo-200">Error: {insightsError}</p>
+                  <h3 className="text-xl font-semibold mb-3">Oops! Couldn't load insights right now.</h3>
+                  <p className="text-sm text-indigo-200 mb-4">
+                    {insightsError.includes('CORS') || insightsError.includes('fetch') 
+                      ? "The AI insights service is temporarily unavailable. Please try again later." 
+                      : `Error: ${insightsError}`}
+                  </p>
+                  {canGenerate && (
+                    <Button
+                      onClick={generateInsights}
+                      disabled={isGenerating}
+                      className="bg-white text-purple-600 hover:bg-gray-100 font-semibold"
+                    >
+                      {isGenerating ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
+                          Retrying...
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <Brain className="w-4 h-4" />
+                          Try Again
+                        </div>
+                      )}
+                    </Button>
+                  )}
                 </div>
               ) : (
                 // Insights content
+                insights && insights.content ? (
                 <div className="space-y-6">
                   {/* Insights Header */}
                   <div className="flex items-center justify-between">
@@ -395,7 +431,7 @@ const Dashboard = () => {
 
                   {/* Parse and display insights */}
                   <div className="space-y-4">
-                    {insights.content
+                    {(insights.content || "")
                       .split("\n\n")
                       .map((section: string, index: number) => {
                         if (section.startsWith("Summary:")) {
@@ -444,6 +480,13 @@ const Dashboard = () => {
                     </AlertDescription>
                   </Alert>
                 </div>
+                ) : (
+                  // Fallback if insights exist but no content
+                  <div className="text-center py-8">
+                    <div className="text-4xl mb-4">🔍</div>
+                    <p className="text-indigo-100">Insights are being processed...</p>
+                  </div>
+                )
               )}
             </CardContent>
           </Card>
