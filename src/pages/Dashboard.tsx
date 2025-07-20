@@ -39,7 +39,6 @@ const useAIInsights = (userId: string | undefined) => {
   const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [dailyGenerationCount, setDailyGenerationCount] = useState(0)
-  const [lastGenerationDate, setLastGenerationDate] = useState<string>("")
 
   // Check local storage for daily generation limit
   useEffect(() => {
@@ -54,7 +53,6 @@ const useAIInsights = (userId: string | undefined) => {
       localStorage.setItem("lastInsightGenerationDate", today)
       localStorage.setItem("dailyInsightCount", "0")
     }
-    setLastGenerationDate(today)
   }, [])
 
   // Fetch latest insights on component mount
@@ -235,7 +233,7 @@ const Dashboard = () => {
             { period: "Today", data: summaries.today, emoji: "📅", color: "from-green-400 to-green-600" },
             { period: "This Week", data: summaries.week, emoji: "📊", color: "from-blue-400 to-blue-600" },
             { period: "This Month", data: summaries.month, emoji: "🗓️", color: "from-purple-400 to-purple-600" },
-          ].map((summary, index) => (
+          ].map((summary) => (
             <motion.div key={summary.period} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
               <Card className="overflow-hidden border-0 shadow-lg">
                 <div className={`h-2 bg-gradient-to-r ${summary.color}`} />
@@ -336,7 +334,7 @@ const Dashboard = () => {
                     </Button>
                   </Link>
                 </div>
-              ) : isLoading ? (
+              ) : insightsLoading ? (
                 // Loading state
                 <div className="text-center py-8">
                   <motion.div
@@ -475,7 +473,7 @@ const Dashboard = () => {
                         dataKey="amount"
                         label={({ category, amount }) => `${category}: $${amount.toFixed(0)}`}
                       >
-                        {categoryBreakdown.map((entry, index) => (
+                        {categoryBreakdown.map((_, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>

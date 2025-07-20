@@ -9,18 +9,6 @@ import { SignUpButton, SignedIn, SignedOut } from "@clerk/clerk-react"
 import { Link } from "react-router"
 
 const HowItWorks = () => {
-  const examples = [
-    {
-      input: "Salary +5000\nPizza -12\nCoffee -4.50\nUber -25",
-      output: {
-        income: 5000,
-        expenses: 41.5,
-        categories: ["Salary", "Food", "Transport"],
-        transactions: 4,
-      },
-    },
-  ]
-
   const features = [
     {
       emoji: "🧠",
