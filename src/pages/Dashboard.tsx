@@ -24,7 +24,6 @@ import {
 import { TrendingUp, TrendingDown, Brain, Info, Plus } from "lucide-react"
 import { Link } from "react-router"
 import {
-  parseTransactionText,
   calculateSummary,
   getCategoryBreakdown,
   type Transaction,
