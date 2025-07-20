@@ -195,20 +195,43 @@ const Dashboard = () => {
       return []
     }
 
-    const allTransactions: Transaction[] = []
-    
-    rawData.forEach((record: any) => {
-      // Ensure record.raw_text exists and is a string before parsing
-      if (record?.raw_text && typeof record.raw_text === 'string') {
-        const parsed = parseTransactionText(record.raw_text, record.date)
-        allTransactions.push(...parsed)
+    // Convert API response to Transaction format
+    const allTransactions: Transaction[] = rawData.map((record: any) => {
+      // Convert the API response format to our Transaction type
+      return {
+        id: record.transaction_id,
+        description: `${record.category} transaction`, // You might want to improve this
+        amount: parseFloat(record.amount),
+        type: record.type.toLowerCase() as "income" | "expense", // Convert "INCOME"/"EXPENSE" to lowercase
+        category: record.category,
+        date: record.date.split('T')[0], // Convert "2025-07-20T00:00:00.000Z" to "2025-07-20"
+        emoji: getCategoryEmoji(record.category),
       }
     })
 
     const sortedTransactions = allTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     
+    console.log("Processed transactions:", sortedTransactions)
+    
     return sortedTransactions
   }, [rawData])
+
+  // Helper function to get emoji for categories
+  const getCategoryEmoji = (category: string) => {
+    const emojiMap: { [key: string]: string } = {
+      food: "🍔",
+      salary: "💰",
+      freelance: "💼",
+      other: "📝",
+      transport: "🚗",
+      entertainment: "🎬",
+      shopping: "🛍️",
+      utilities: "⚡",
+      healthcare: "🏥",
+      education: "📚",
+    }
+    return emojiMap[category.toLowerCase()] || "📝"
+  }
 
   const summaries = useMemo(
     () => {
