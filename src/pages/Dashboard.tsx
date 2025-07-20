@@ -57,40 +57,59 @@ const useAIInsights = (userId: string | undefined) => {
 
   // Fetch latest insights on component mount
   useEffect(() => {
-    if (!userId) return
+    console.log('🔄 useEffect triggered - userId:', userId)
+    if (!userId) {
+      console.log('❌ No userId, skipping fetch')
+      return
+    }
+    console.log('🚀 Calling fetchLatestInsights')
     fetchLatestInsights()
   }, [userId])
 
   const fetchLatestInsights = async () => {
     if (!userId) return
 
+    const url = `https://lazyledger-parser-production.up.railway.app/insights/${userId}/latest`
+    console.log('🔍 Fetching latest insights from:', url)
+    console.log('👤 User ID:', userId)
+
     setIsLoading(true)
     setError(null)
     try {
-      const response = await fetch(`https://lazyledger-parser-production.up.railway.app/insights/${userId}/latest`, {
+      const response = await fetch(url, {
         mode: 'cors',
         headers: {
           'Content-Type': 'application/json',
         },
       })
+      
+      console.log('📡 Response status:', response.status)
+      console.log('📡 Response ok:', response.ok)
+      
       if (response.ok) {
         const data = await response.json()
+        console.log('✅ Received data:', data)
+        
         // Handle the data structure where insight is nested
         if (data.insight) {
           setInsights(data.insight)
+          console.log('💡 Set insights:', data.insight)
         } else if (data.content) {
           // Direct insight object
           setInsights(data)
+          console.log('💡 Set direct insights:', data)
         } else {
           setInsights(null)
+          console.log('❌ No insights in response')
         }
       } else if (response.status === 404) {
         setInsights(null) // No insights found
+        console.log('🔍 No insights found (404)')
       } else {
         throw new Error("Failed to fetch insights")
       }
     } catch (err) {
-      console.error('Failed to fetch insights:', err)
+      console.error('❌ Failed to fetch insights:', err)
       setError(err instanceof Error ? err.message : "Failed to load insights")
       setInsights(null)
     } finally {
@@ -101,25 +120,36 @@ const useAIInsights = (userId: string | undefined) => {
   const generateInsights = async () => {
     if (!userId || dailyGenerationCount >= 3) return
 
+    const url = `https://lazyledger-parser-production.up.railway.app/insights/${userId}`
+    console.log('🚀 Generating insights at:', url)
+    console.log('👤 User ID:', userId)
+    console.log('🔢 Daily generation count:', dailyGenerationCount)
+
     setIsGenerating(true)
     setError(null)
     try {
-      const response = await fetch(`https://lazyledger-parser-production.up.railway.app/insights/${userId}`, {
+      const response = await fetch(url, {
         method: "POST",
         mode: 'cors',
         headers: {
           'Content-Type': 'application/json',
         },
       })
+      
+      console.log('📡 Generate response status:', response.status)
+      console.log('📡 Generate response ok:', response.ok)
+      
       if (!response.ok) {
         throw new Error("Failed to generate insights")
       }
       const data = await response.json()
+      console.log('✅ Generated data:', data)
 
       // Handle the response structure from the API
       let insightData
       if (data.insight) {
         insightData = data.insight
+        console.log('💡 Using data.insight:', insightData)
       } else if (data.insights) {
         // Create insight object if the API returns { insights: "content" }
         insightData = {
@@ -129,18 +159,22 @@ const useAIInsights = (userId: string | undefined) => {
           content: data.insights,
           created_at: new Date().toISOString(),
         }
+        console.log('💡 Created insight from data.insights:', insightData)
       } else {
+        console.error('❌ Invalid response format:', data)
         throw new Error("Invalid response format")
       }
 
       setInsights(insightData)
+      console.log('✅ Successfully set insights:', insightData)
 
       // Update generation count
       const newCount = dailyGenerationCount + 1
       setDailyGenerationCount(newCount)
       localStorage.setItem("dailyInsightCount", newCount.toString())
+      console.log('📊 Updated generation count to:', newCount)
     } catch (err) {
-      console.error('Failed to generate insights:', err)
+      console.error('❌ Failed to generate insights:', err)
       setError(err instanceof Error ? err.message : "Failed to generate insights")
     } finally {
       setIsGenerating(false)
