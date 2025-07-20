@@ -57,12 +57,9 @@ const useAIInsights = (userId: string | undefined) => {
 
   // Fetch latest insights on component mount
   useEffect(() => {
-    console.log('🔄 useEffect triggered - userId:', userId)
     if (!userId) {
-      console.log('❌ No userId, skipping fetch')
       return
     }
-    console.log('🚀 Calling fetchLatestInsights')
     fetchLatestInsights()
   }, [userId])
 
@@ -70,8 +67,6 @@ const useAIInsights = (userId: string | undefined) => {
     if (!userId) return
 
     const url = `https://lazyledger-parser-production.up.railway.app/insights/${userId}/latest`
-    console.log('🔍 Fetching latest insights from:', url)
-    console.log('👤 User ID:', userId)
 
     setIsLoading(true)
     setError(null)
@@ -83,33 +78,24 @@ const useAIInsights = (userId: string | undefined) => {
         },
       })
       
-      console.log('📡 Response status:', response.status)
-      console.log('📡 Response ok:', response.ok)
-      
       if (response.ok) {
         const data = await response.json()
-        console.log('✅ Received data:', data)
         
         // Handle the data structure where insight is nested
         if (data.insight) {
           setInsights(data.insight)
-          console.log('💡 Set insights:', data.insight)
         } else if (data.content) {
           // Direct insight object
           setInsights(data)
-          console.log('💡 Set direct insights:', data)
         } else {
           setInsights(null)
-          console.log('❌ No insights in response')
         }
       } else if (response.status === 404) {
         setInsights(null) // No insights found
-        console.log('🔍 No insights found (404)')
       } else {
         throw new Error("Failed to fetch insights")
       }
     } catch (err) {
-      console.error('❌ Failed to fetch insights:', err)
       setError(err instanceof Error ? err.message : "Failed to load insights")
       setInsights(null)
     } finally {
@@ -121,9 +107,6 @@ const useAIInsights = (userId: string | undefined) => {
     if (!userId || dailyGenerationCount >= 3) return
 
     const url = `https://lazyledger-parser-production.up.railway.app/insights/${userId}`
-    console.log('🚀 Generating insights at:', url)
-    console.log('👤 User ID:', userId)
-    console.log('🔢 Daily generation count:', dailyGenerationCount)
 
     setIsGenerating(true)
     setError(null)
@@ -136,20 +119,15 @@ const useAIInsights = (userId: string | undefined) => {
         },
       })
       
-      console.log('📡 Generate response status:', response.status)
-      console.log('📡 Generate response ok:', response.ok)
-      
       if (!response.ok) {
         throw new Error("Failed to generate insights")
       }
       const data = await response.json()
-      console.log('✅ Generated data:', data)
 
       // Handle the response structure from the API
       let insightData
       if (data.insight) {
         insightData = data.insight
-        console.log('💡 Using data.insight:', insightData)
       } else if (data.insights) {
         // Create insight object if the API returns { insights: "content" }
         insightData = {
@@ -159,22 +137,17 @@ const useAIInsights = (userId: string | undefined) => {
           content: data.insights,
           created_at: new Date().toISOString(),
         }
-        console.log('💡 Created insight from data.insights:', insightData)
       } else {
-        console.error('❌ Invalid response format:', data)
         throw new Error("Invalid response format")
       }
 
       setInsights(insightData)
-      console.log('✅ Successfully set insights:', insightData)
 
       // Update generation count
       const newCount = dailyGenerationCount + 1
       setDailyGenerationCount(newCount)
       localStorage.setItem("dailyInsightCount", newCount.toString())
-      console.log('📊 Updated generation count to:', newCount)
     } catch (err) {
-      console.error('❌ Failed to generate insights:', err)
       setError(err instanceof Error ? err.message : "Failed to generate insights")
     } finally {
       setIsGenerating(false)
@@ -194,15 +167,17 @@ const useAIInsights = (userId: string | undefined) => {
 
 const Dashboard = () => {
   const { user } = useUser()
-  console.log('👤 Dashboard - Current user:', user?.id)
   
   const { data: rawData, isLoading } = useGetTransactionsByUserQuery(user?.id || "", {
     skip: !user?.id,
   })
-  
-  console.log('📊 Dashboard - Raw transaction data:', rawData)
-  console.log('⏳ Dashboard - Loading state:', isLoading)
-  console.log('🔗 Main API endpoint would be:', `your-main-api/transactions/${user?.id}`)
+
+  // Console log the output of useGetTransactionsByUserQuery
+  console.log("useGetTransactionsByUserQuery output:", {
+    data: rawData,
+    isLoading,
+    userId: user?.id
+  })
 
   // Fetch AI insights
   const {
@@ -216,69 +191,51 @@ const Dashboard = () => {
   } = useAIInsights(user?.id)
 
   const transactions = useMemo(() => {
-    console.log('🔄 Processing transactions - rawData:', rawData)
     if (!rawData) {
-      console.log('❌ No rawData available')
       return []
     }
 
-    console.log('📋 Raw records count:', rawData.length)
     const allTransactions: Transaction[] = []
     
-    rawData.forEach((record: any, index: number) => {
-      console.log(`📝 Processing record ${index}:`, record)
+    rawData.forEach((record: any) => {
       // Ensure record.raw_text exists and is a string before parsing
       if (record?.raw_text && typeof record.raw_text === 'string') {
-        console.log(`✅ Valid raw_text found: "${record.raw_text}"`)
         const parsed = parseTransactionText(record.raw_text, record.date)
-        console.log(`🔍 Parsed transactions:`, parsed)
         allTransactions.push(...parsed)
-      } else {
-        console.log(`❌ Invalid record at index ${index}:`, record)
       }
     })
 
     const sortedTransactions = allTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    console.log('📊 Final processed transactions:', sortedTransactions)
-    console.log('🔢 Total transaction count:', sortedTransactions.length)
     
     return sortedTransactions
   }, [rawData])
 
   const summaries = useMemo(
     () => {
-      console.log('📊 Calculating summaries for transactions:', transactions)
       const result = {
         today: calculateSummary(transactions, "today"),
         week: calculateSummary(transactions, "week"),
         month: calculateSummary(transactions, "month"),
       }
-      console.log('📈 Summary results:', result)
       return result
     },
     [transactions],
   )
 
   const categoryBreakdown = useMemo(() => {
-    console.log('🥧 Calculating category breakdown for transactions:', transactions)
     const result = getCategoryBreakdown(transactions)
-    console.log('📋 Category breakdown result:', result)
     return result
   }, [transactions])
 
   const trendData = useMemo(() => {
-    console.log('📈 Calculating trend data for transactions:', transactions)
     const last7Days = Array.from({ length: 7 }, (_, i) => {
       const date = new Date()
       date.setDate(date.getDate() - i)
       return date.toISOString().split("T")[0]
     }).reverse()
-    
-    console.log('📅 Last 7 days:', last7Days)
 
     const result = last7Days.map((date) => {
       const dayTransactions = transactions.filter((t) => t.date === date)
-      console.log(`📊 Transactions for ${date}:`, dayTransactions)
       
       const income = dayTransactions.filter((t) => t.type === "income").reduce((sum, t) => sum + t.amount, 0)
       const expenses = dayTransactions.filter((t) => t.type === "expense").reduce((sum, t) => sum + t.amount, 0)
@@ -290,11 +247,9 @@ const Dashboard = () => {
         net: income - expenses,
       }
       
-      console.log(`💰 Day data for ${date}:`, dayData)
       return dayData
     })
     
-    console.log('📈 Final trend data:', result)
     return result
   }, [transactions])
 
