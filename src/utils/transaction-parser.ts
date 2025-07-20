@@ -48,6 +48,11 @@ const categoryMap: Record<string, { emoji: string; category: string }> = {
 }
 
 export function parseTransactionText(rawText: string, date: string): Transaction[] {
+  // Check if rawText is valid
+  if (!rawText || typeof rawText !== 'string') {
+    return []
+  }
+  
   const lines = rawText.split("\n").filter((line) => line.trim())
   const transactions: Transaction[] = []
 

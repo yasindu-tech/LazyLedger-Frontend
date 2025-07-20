@@ -75,8 +75,12 @@ const useAIInsights = (userId: string | undefined) => {
       })
       if (response.ok) {
         const data = await response.json()
+        // Handle the data structure where insight is nested
         if (data.insight) {
           setInsights(data.insight)
+        } else if (data.content) {
+          // Direct insight object
+          setInsights(data)
         } else {
           setInsights(null)
         }
@@ -112,15 +116,24 @@ const useAIInsights = (userId: string | undefined) => {
       }
       const data = await response.json()
 
-      // Update insights with new data
-      const newInsight = {
-        insight_id: Date.now(), // Temporary ID
-        user_id: userId,
-        title: `Financial Analysis - ${new Date().toLocaleDateString()}`,
-        content: data.insights,
-        created_at: new Date().toISOString(),
+      // Handle the response structure from the API
+      let insightData
+      if (data.insight) {
+        insightData = data.insight
+      } else if (data.insights) {
+        // Create insight object if the API returns { insights: "content" }
+        insightData = {
+          insight_id: Date.now(),
+          user_id: userId,
+          title: `Financial Analysis - ${new Date().toLocaleDateString()}`,
+          content: data.insights,
+          created_at: new Date().toISOString(),
+        }
+      } else {
+        throw new Error("Invalid response format")
       }
-      setInsights(newInsight)
+
+      setInsights(insightData)
 
       // Update generation count
       const newCount = dailyGenerationCount + 1
@@ -167,8 +180,11 @@ const Dashboard = () => {
 
     const allTransactions: Transaction[] = []
     rawData.forEach((record: any) => {
-      const parsed = parseTransactionText(record.raw_text, record.date)
-      allTransactions.push(...parsed)
+      // Ensure record.raw_text exists and is a string before parsing
+      if (record?.raw_text && typeof record.raw_text === 'string') {
+        const parsed = parseTransactionText(record.raw_text, record.date)
+        allTransactions.push(...parsed)
+      }
     })
 
     return allTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
@@ -419,7 +435,7 @@ const Dashboard = () => {
                 </div>
               ) : (
                 // Insights content
-                insights && insights.content ? (
+                insights && insights.content && typeof insights.content === 'string' ? (
                 <div className="space-y-6">
                   {/* Insights Header */}
                   <div className="flex items-center justify-between">
@@ -433,6 +449,7 @@ const Dashboard = () => {
                   <div className="space-y-4">
                     {(insights.content || "")
                       .split("\n\n")
+                      .filter(section => section.trim() !== '')
                       .map((section: string, index: number) => {
                         if (section.startsWith("Summary:")) {
                           return (
