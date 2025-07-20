@@ -194,9 +194,15 @@ const useAIInsights = (userId: string | undefined) => {
 
 const Dashboard = () => {
   const { user } = useUser()
+  console.log('👤 Dashboard - Current user:', user?.id)
+  
   const { data: rawData, isLoading } = useGetTransactionsByUserQuery(user?.id || "", {
     skip: !user?.id,
   })
+  
+  console.log('📊 Dashboard - Raw transaction data:', rawData)
+  console.log('⏳ Dashboard - Loading state:', isLoading)
+  console.log('🔗 Main API endpoint would be:', `your-main-api/transactions/${user?.id}`)
 
   // Fetch AI insights
   const {
@@ -210,50 +216,86 @@ const Dashboard = () => {
   } = useAIInsights(user?.id)
 
   const transactions = useMemo(() => {
-    if (!rawData) return []
+    console.log('🔄 Processing transactions - rawData:', rawData)
+    if (!rawData) {
+      console.log('❌ No rawData available')
+      return []
+    }
 
+    console.log('📋 Raw records count:', rawData.length)
     const allTransactions: Transaction[] = []
-    rawData.forEach((record: any) => {
+    
+    rawData.forEach((record: any, index: number) => {
+      console.log(`📝 Processing record ${index}:`, record)
       // Ensure record.raw_text exists and is a string before parsing
       if (record?.raw_text && typeof record.raw_text === 'string') {
+        console.log(`✅ Valid raw_text found: "${record.raw_text}"`)
         const parsed = parseTransactionText(record.raw_text, record.date)
+        console.log(`🔍 Parsed transactions:`, parsed)
         allTransactions.push(...parsed)
+      } else {
+        console.log(`❌ Invalid record at index ${index}:`, record)
       }
     })
 
-    return allTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    const sortedTransactions = allTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    console.log('📊 Final processed transactions:', sortedTransactions)
+    console.log('🔢 Total transaction count:', sortedTransactions.length)
+    
+    return sortedTransactions
   }, [rawData])
 
   const summaries = useMemo(
-    () => ({
-      today: calculateSummary(transactions, "today"),
-      week: calculateSummary(transactions, "week"),
-      month: calculateSummary(transactions, "month"),
-    }),
+    () => {
+      console.log('📊 Calculating summaries for transactions:', transactions)
+      const result = {
+        today: calculateSummary(transactions, "today"),
+        week: calculateSummary(transactions, "week"),
+        month: calculateSummary(transactions, "month"),
+      }
+      console.log('📈 Summary results:', result)
+      return result
+    },
     [transactions],
   )
 
-  const categoryBreakdown = useMemo(() => getCategoryBreakdown(transactions), [transactions])
+  const categoryBreakdown = useMemo(() => {
+    console.log('🥧 Calculating category breakdown for transactions:', transactions)
+    const result = getCategoryBreakdown(transactions)
+    console.log('📋 Category breakdown result:', result)
+    return result
+  }, [transactions])
 
   const trendData = useMemo(() => {
+    console.log('📈 Calculating trend data for transactions:', transactions)
     const last7Days = Array.from({ length: 7 }, (_, i) => {
       const date = new Date()
       date.setDate(date.getDate() - i)
       return date.toISOString().split("T")[0]
     }).reverse()
+    
+    console.log('📅 Last 7 days:', last7Days)
 
-    return last7Days.map((date) => {
+    const result = last7Days.map((date) => {
       const dayTransactions = transactions.filter((t) => t.date === date)
+      console.log(`📊 Transactions for ${date}:`, dayTransactions)
+      
       const income = dayTransactions.filter((t) => t.type === "income").reduce((sum, t) => sum + t.amount, 0)
       const expenses = dayTransactions.filter((t) => t.type === "expense").reduce((sum, t) => sum + t.amount, 0)
 
-      return {
+      const dayData = {
         date: new Date(date).toLocaleDateString("en-US", { weekday: "short" }),
         income,
         expenses,
         net: income - expenses,
       }
+      
+      console.log(`💰 Day data for ${date}:`, dayData)
+      return dayData
     })
+    
+    console.log('📈 Final trend data:', result)
+    return result
   }, [transactions])
 
   const topCategories = categoryBreakdown.slice(0, 3)
