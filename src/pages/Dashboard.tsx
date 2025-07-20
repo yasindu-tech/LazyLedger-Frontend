@@ -449,7 +449,7 @@ const Dashboard = () => {
                   <div className="space-y-4">
                     {(insights.content || "")
                       .split("\n\n")
-                      .filter(section => section.trim() !== '')
+                      .filter((section: string) => section.trim() !== '')
                       .map((section: string, index: number) => {
                         if (section.startsWith("Summary:")) {
                           return (
