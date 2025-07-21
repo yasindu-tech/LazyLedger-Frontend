@@ -178,6 +178,23 @@ const Dashboard = () => {
     userId: user?.id
   })
 
+  // Helper function to get emoji for categories
+  const getCategoryEmoji = (category: string) => {
+    const emojiMap: { [key: string]: string } = {
+      food: "🍔",
+      salary: "💰",
+      freelance: "💼",
+      other: "📝",
+      transport: "🚗",
+      entertainment: "🎬",
+      shopping: "🛍️",
+      utilities: "⚡",
+      healthcare: "🏥",
+      education: "📚",
+    }
+    return emojiMap[category.toLowerCase()] || "📝"
+  }
+
   // Fetch AI insights
   const {
     insights,
@@ -214,23 +231,6 @@ const Dashboard = () => {
     
     return sortedTransactions
   }, [rawData])
-
-  // Helper function to get emoji for categories
-  const getCategoryEmoji = (category: string) => {
-    const emojiMap: { [key: string]: string } = {
-      food: "🍔",
-      salary: "💰",
-      freelance: "💼",
-      other: "📝",
-      transport: "🚗",
-      entertainment: "🎬",
-      shopping: "🛍️",
-      utilities: "⚡",
-      healthcare: "🏥",
-      education: "📚",
-    }
-    return emojiMap[category.toLowerCase()] || "📝"
-  }
 
   const summaries = useMemo(
     () => {
