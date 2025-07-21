@@ -24,8 +24,6 @@ const Footer = () => {
     resources: [
       { name: "Help Center", href: "#" },
       { name: "Blog", href: "#" },
-      { name: "Community", href: "#" },
-      { name: "API Docs", href: "#" },
     ],
   }
 
@@ -135,39 +133,7 @@ const Footer = () => {
             </ul>
           </motion.div>
         </div>
-
-        {/* Newsletter Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="mt-12 pt-8 border-t border-gray-700"
-        >
-          <Card className="bg-gradient-to-r from-purple-800/50 to-blue-800/50 border-purple-600/30">
-            <div className="p-6 text-center">
-              <div className="flex items-center justify-center gap-2 mb-3">
-                <Sparkles className="w-5 h-5 text-yellow-400" />
-                <h4 className="text-lg font-semibold">Stay in the Loop</h4>
-                <Sparkles className="w-5 h-5 text-yellow-400" />
-              </div>
-              <p className="text-gray-300 mb-4">
-                Get tips, updates, and the occasional dad joke about money. No spam, we promise! 🤞
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-                <input
-                  type="email"
-                  placeholder="your@email.com"
-                  className="flex-1 px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
-                />
-                <Button className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600">
-                  Subscribe ✨
-                </Button>
-              </div>
-            </div>
-          </Card>
-        </motion.div>
       </div>
-
       {/* Bottom Bar */}
       <div className="border-t border-gray-700 bg-gray-900/50">
         <div className="max-w-6xl mx-auto px-6 py-6">
@@ -189,7 +155,7 @@ const Footer = () => {
               transition={{ duration: 0.5, delay: 0.1 }}
               className="flex items-center gap-4 text-sm text-gray-400"
             >
-              <span>🚀 Version 1.0</span>
+              <span>🚀 Version 1.14</span>
               <span>•</span>
               <span>🌟 Free Forever</span>
               <span>•</span>
