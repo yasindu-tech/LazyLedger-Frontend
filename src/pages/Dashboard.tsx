@@ -111,7 +111,7 @@ const useAIInsights = (userId: string | undefined) => {
     setError(null)
     try {
       const response = await fetch(url, {
-        method: "POST",
+        method: "GET",
         mode: 'cors',
         headers: {
           'Content-Type': 'application/json',
