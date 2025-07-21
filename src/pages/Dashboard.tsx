@@ -10,6 +10,12 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
   PieChart,
   Pie,
   Cell,
@@ -21,7 +27,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts"
-import { TrendingUp, TrendingDown, Brain, Info, Plus } from "lucide-react"
+import { TrendingUp, TrendingDown, Brain, Info, Plus, ChevronDown } from "lucide-react"
 import { Link } from "react-router"
 import {
   calculateSummary,
@@ -30,6 +36,14 @@ import {
 } from "../utils/transaction-parser"
 
 const COLORS = ["#8B5CF6", "#06B6D4", "#10B981", "#F59E0B", "#EF4444", "#EC4899", "#6366F1"]
+
+// Currency configurations
+const CURRENCIES = {
+  LKR: { symbol: "Rs", name: "Sri Lankan Rupee", rate: 1 },
+  USD: { symbol: "$", name: "US Dollar", rate: 0.0031 },
+  GBP: { symbol: "£", name: "British Pound", rate: 0.0025 },
+  EUR: { symbol: "€", name: "Euro", rate: 0.0029 },
+}
 
 // Custom hook for AI insights with generation and fetching
 const useAIInsights = (userId: string | undefined) => {
@@ -167,10 +181,18 @@ const useAIInsights = (userId: string | undefined) => {
 
 const Dashboard = () => {
   const { user } = useUser()
+  const [selectedCurrency, setSelectedCurrency] = useState<keyof typeof CURRENCIES>("LKR")
   
   const { data: rawData, isLoading } = useGetTransactionsByUserQuery(user?.id || "", {
     skip: !user?.id,
   })
+
+  // Helper function to format currency
+  const formatCurrency = (amount: number) => {
+    const currency = CURRENCIES[selectedCurrency]
+    const convertedAmount = amount * currency.rate
+    return `${currency.symbol}${convertedAmount.toFixed(2)}`
+  }
 
   // Console log the output of useGetTransactionsByUserQuery
   console.log("useGetTransactionsByUserQuery output:", {
@@ -297,11 +319,42 @@ const Dashboard = () => {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 p-6">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-2">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-            💸 Your Money Dashboard
-          </h1>
-          <p className="text-gray-600">Let's see where your money's been hanging out! 🕵️‍♀️</p>
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-4">
+          <div className="flex justify-between items-center">
+            <div className="flex-1" />
+            <div className="flex-1 text-center">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                💸 Your Money Dashboard
+              </h1>
+              <p className="text-gray-600">Let's see where your money's been hanging out! 🕵️‍♀️</p>
+            </div>
+            <div className="flex-1 flex justify-end">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <span className="text-sm font-medium">{CURRENCIES[selectedCurrency].symbol}</span>
+                    <span className="text-sm">{selectedCurrency}</span>
+                    <ChevronDown className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  {Object.entries(CURRENCIES).map(([code, currency]) => (
+                    <DropdownMenuItem
+                      key={code}
+                      onClick={() => setSelectedCurrency(code as keyof typeof CURRENCIES)}
+                      className={selectedCurrency === code ? "bg-gray-100" : ""}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{currency.symbol}</span>
+                        <span className="text-sm">{code}</span>
+                        <span className="text-xs text-gray-500">- {currency.name}</span>
+                      </div>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
         </motion.div>
 
         {/* Summary Cards */}
@@ -328,11 +381,11 @@ const Dashboard = () => {
                 <CardContent className="space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600">Income</span>
-                    <span className="font-semibold text-green-600">+${summary.data.totalIncome.toFixed(2)}</span>
+                    <span className="font-semibold text-green-600">+{formatCurrency(summary.data.totalIncome)}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600">Expenses</span>
-                    <span className="font-semibold text-red-600">-${summary.data.totalExpenses.toFixed(2)}</span>
+                    <span className="font-semibold text-red-600">-{formatCurrency(summary.data.totalExpenses)}</span>
                   </div>
                   <Separator />
                   <div className="flex justify-between items-center">
@@ -344,7 +397,7 @@ const Dashboard = () => {
                         <TrendingDown className="w-4 h-4 text-red-600" />
                       )}
                       <span className={`font-bold ${summary.data.netAmount >= 0 ? "text-green-600" : "text-red-600"}`}>
-                        ${Math.abs(summary.data.netAmount).toFixed(2)}
+                        {formatCurrency(Math.abs(summary.data.netAmount))}
                       </span>
                     </div>
                   </div>
@@ -585,13 +638,13 @@ const Dashboard = () => {
                         cy="50%"
                         outerRadius={80}
                         dataKey="amount"
-                        label={({ category, amount }) => `${category}: $${amount.toFixed(0)}`}
+                        label={({ category, amount }) => `${category}: ${formatCurrency(amount)}`}
                       >
                         {categoryBreakdown.map((_, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value: any) => [`$${value.toFixed(2)}`, "Amount"]} />
+                      <Tooltip formatter={(value: any) => [`${formatCurrency(value)}`, "Amount"]} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
@@ -616,7 +669,7 @@ const Dashboard = () => {
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="date" />
                       <YAxis />
-                      <Tooltip formatter={(value: any) => [`$${value.toFixed(2)}`, ""]} />
+                      <Tooltip formatter={(value: any) => [`${formatCurrency(value)}`, ""]} />
                       <Line
                         type="monotone"
                         dataKey="income"
@@ -668,7 +721,7 @@ const Dashboard = () => {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="font-bold text-lg">${category.amount.toFixed(2)}</div>
+                      <div className="font-bold text-lg">{formatCurrency(category.amount)}</div>
                       <Badge variant={index === 0 ? "default" : "secondary"}>#{index + 1}</Badge>
                     </div>
                   </motion.div>
@@ -707,7 +760,7 @@ const Dashboard = () => {
                       <div
                         className={`font-semibold ${transaction.type === "income" ? "text-green-600" : "text-red-600"}`}
                       >
-                        {transaction.type === "income" ? "+" : "-"}${transaction.amount.toFixed(2)}
+                        {transaction.type === "income" ? "+" : "-"}{formatCurrency(transaction.amount)}
                       </div>
                       <div className="text-xs text-gray-500">{new Date(transaction.date).toLocaleDateString()}</div>
                     </div>
@@ -730,12 +783,12 @@ const Dashboard = () => {
                 </div>
                 <div>
                   <div className="text-2xl mb-2">💰</div>
-                  <div className="text-2xl font-bold">${summaries.month.totalIncome.toFixed(0)}</div>
+                  <div className="text-2xl font-bold">{formatCurrency(summaries.month.totalIncome).replace(/\.\d{2}$/, '')}</div>
                   <div className="text-sm opacity-90">Monthly Income</div>
                 </div>
                 <div>
                   <div className="text-2xl mb-2">🛍️</div>
-                  <div className="text-2xl font-bold">${summaries.month.totalExpenses.toFixed(0)}</div>
+                  <div className="text-2xl font-bold">{formatCurrency(summaries.month.totalExpenses).replace(/\.\d{2}$/, '')}</div>
                   <div className="text-sm opacity-90">Monthly Spending</div>
                 </div>
                 <div>
