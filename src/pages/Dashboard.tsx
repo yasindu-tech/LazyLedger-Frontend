@@ -122,6 +122,7 @@ const useAIInsights = (userId: string | undefined) => {
         throw new Error("Failed to generate insights")
       }
       const data = await response.json()
+      console.log("Generated insights data:", data)
 
       // Handle the response structure from the API
       let insightData
