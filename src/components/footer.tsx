@@ -1,8 +1,7 @@
 
 import { motion } from "framer-motion"
-import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Heart, Github, Twitter, Mail, Sparkles } from "lucide-react"
+import { Heart, Github, Twitter, Mail } from "lucide-react"
 import { Link } from "react-router"
 
 const Footer = () => {
