@@ -45,12 +45,19 @@ const CURRENCIES = {
   EUR: { symbol: "€", name: "Euro", rate: 0.0029 },
 }
 
+// Base URL for AI insights service. Change here to point to the desired deployment.
+const INSIGHTS_BASE = 'https://lazyledger-parser.onrender.com'
+
+// Local helper types for clearer typing in this file
+type CurrencyCode = keyof typeof CURRENCIES
+type Currency = (typeof CURRENCIES)[CurrencyCode]
+
 // Custom hook for AI insights with generation and fetching
 const useAIInsights = (userId: string | undefined) => {
-  const [insights, setInsights] = useState<any>(null)
+  const [insights, setInsights] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState(null)
   const [dailyGenerationCount, setDailyGenerationCount] = useState(0)
 
   // Check local storage for daily generation limit
@@ -79,7 +86,7 @@ const useAIInsights = (userId: string | undefined) => {
   const fetchLatestInsights = async () => {
     if (!userId) return
 
-    const url = `https://lazyledger-parser-production.up.railway.app/insights/${userId}/latest`
+  const url = `${INSIGHTS_BASE}/insights/${userId}/latest`
 
     setIsLoading(true)
     setError(null)
@@ -119,7 +126,7 @@ const useAIInsights = (userId: string | undefined) => {
   const generateInsights = async () => {
     if (!userId || dailyGenerationCount >= 3) return
 
-    const url = `https://lazyledger-parser-production.up.railway.app/insights/${userId}`
+  const url = `${INSIGHTS_BASE}/insights/${userId}`
 
     setIsGenerating(true)
     setError(null)
@@ -181,7 +188,7 @@ const useAIInsights = (userId: string | undefined) => {
 
 const Dashboard = () => {
   const { user } = useUser()
-  const [selectedCurrency, setSelectedCurrency] = useState<keyof typeof CURRENCIES>("LKR")
+  const [selectedCurrency, setSelectedCurrency] = useState("LKR" as keyof typeof CURRENCIES)
   
   const { data: rawData, isLoading } = useGetTransactionsByUserQuery(user?.id || "", {
     skip: !user?.id,
@@ -189,7 +196,8 @@ const Dashboard = () => {
 
   // Helper function to format currency
   const formatCurrency = (amount: number) => {
-    const currency = CURRENCIES[selectedCurrency]
+    const key = selectedCurrency as CurrencyCode
+    const currency = CURRENCIES[key] as Currency
     const convertedAmount = amount * currency.rate
     return `${currency.symbol}${convertedAmount.toFixed(2)}`
   }
@@ -279,11 +287,15 @@ const Dashboard = () => {
       return date.toISOString().split("T")[0]
     }).reverse()
 
-    const result = last7Days.map((date) => {
-      const dayTransactions = transactions.filter((t) => t.date === date)
+    const result = last7Days.map((date: string) => {
+      const dayTransactions = transactions.filter((t: Transaction) => t.date === date)
       
-      const income = dayTransactions.filter((t) => t.type === "income").reduce((sum, t) => sum + t.amount, 0)
-      const expenses = dayTransactions.filter((t) => t.type === "expense").reduce((sum, t) => sum + t.amount, 0)
+      const income = dayTransactions
+        .filter((t: Transaction) => t.type === "income")
+        .reduce((sum: number, t: Transaction) => sum + t.amount, 0)
+      const expenses = dayTransactions
+        .filter((t: Transaction) => t.type === "expense")
+        .reduce((sum: number, t: Transaction) => sum + t.amount, 0)
 
       const dayData = {
         date: new Date(date).toLocaleDateString("en-US", { weekday: "short" }),
@@ -332,13 +344,13 @@ const Dashboard = () => {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="flex items-center gap-2">
-                    <span className="text-sm font-medium">{CURRENCIES[selectedCurrency].symbol}</span>
+                    <span className="text-sm font-medium">{(CURRENCIES[selectedCurrency as keyof typeof CURRENCIES] as Currency).symbol}</span>
                     <span className="text-sm">{selectedCurrency}</span>
                     <ChevronDown className="w-4 h-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
-                  {Object.entries(CURRENCIES).map(([code, currency]) => (
+                  {(Object.entries(CURRENCIES) as [CurrencyCode, Currency][]).map(([code, currency]) => (
                     <DropdownMenuItem
                       key={code}
                       onClick={() => setSelectedCurrency(code as keyof typeof CURRENCIES)}
@@ -638,9 +650,9 @@ const Dashboard = () => {
                         cy="50%"
                         outerRadius={80}
                         dataKey="amount"
-                        label={({ category, amount }) => `${category}: ${formatCurrency(amount)}`}
+                        label={(entry: any) => `${entry.category}: ${formatCurrency(entry.amount)}`}
                       >
-                        {categoryBreakdown.map((_, index) => (
+                        {categoryBreakdown.map((_: any, index: number) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
@@ -705,7 +717,7 @@ const Dashboard = () => {
                 <CardDescription>Your biggest spending categories</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {topCategories.map((category, index) => (
+                {topCategories.map((category: any, index: number) => (
                   <motion.div
                     key={category.category}
                     initial={{ opacity: 0, x: -20 }}
@@ -741,7 +753,7 @@ const Dashboard = () => {
                 <CardDescription>Your latest money moves</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                {recentTransactions.map((transaction, index) => (
+                {recentTransactions.map((transaction: any, index: number) => (
                   <motion.div
                     key={transaction.id}
                     initial={{ opacity: 0, x: 20 }}
