@@ -11,6 +11,10 @@ declare namespace React {
   type JSXElementConstructor<P = any> = (props: P) => any
   function createElement(...args: any[]): any
   interface Attributes {}
+  // Minimal React Hooks stubs
+  function useState<T = any>(initial?: T): [T, (value: any) => void]
+  function useEffect(effect: (...args: any[]) => any, deps?: any[]): void
+  function useMemo<T = any>(factory: () => T, deps?: any[]): T
 }
 
 declare module 'react' {

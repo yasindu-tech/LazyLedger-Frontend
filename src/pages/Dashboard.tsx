@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState, useEffect } from "react"
+import * as React from "react"
 import { useGetTransactionsByUserQuery } from "../services/api"
 import { useUser } from "@clerk/clerk-react"
 import { motion } from "framer-motion"
@@ -54,14 +54,14 @@ type Currency = (typeof CURRENCIES)[CurrencyCode]
 
 // Custom hook for AI insights with generation and fetching
 const useAIInsights = (userId: string | undefined) => {
-  const [insights, setInsights] = useState(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [error, setError] = useState(null)
-  const [dailyGenerationCount, setDailyGenerationCount] = useState(0)
+  const [insights, setInsights] = React.useState<any>(null)
+  const [isLoading, setIsLoading] = React.useState<boolean>(false)
+  const [isGenerating, setIsGenerating] = React.useState<boolean>(false)
+  const [error, setError] = React.useState<string | null>(null)
+  const [dailyGenerationCount, setDailyGenerationCount] = React.useState<number>(0)
 
   // Check local storage for daily generation limit
-  useEffect(() => {
+  React.useEffect(() => {
     const today = new Date().toDateString()
     const storedDate = localStorage.getItem("lastInsightGenerationDate")
     const storedCount = localStorage.getItem("dailyInsightCount")
@@ -76,7 +76,7 @@ const useAIInsights = (userId: string | undefined) => {
   }, [])
 
   // Fetch latest insights on component mount
-  useEffect(() => {
+  React.useEffect(() => {
     if (!userId) {
       return
     }
@@ -188,7 +188,7 @@ const useAIInsights = (userId: string | undefined) => {
 
 const Dashboard = () => {
   const { user } = useUser()
-  const [selectedCurrency, setSelectedCurrency] = useState("LKR" as keyof typeof CURRENCIES)
+  const [selectedCurrency, setSelectedCurrency] = React.useState("LKR" as keyof typeof CURRENCIES)
   
   const { data: rawData, isLoading } = useGetTransactionsByUserQuery(user?.id || "", {
     skip: !user?.id,
@@ -237,7 +237,7 @@ const Dashboard = () => {
     remainingGenerations,
   } = useAIInsights(user?.id)
 
-  const transactions = useMemo(() => {
+  const transactions = React.useMemo(() => {
     if (!rawData) {
       return []
     }
@@ -263,7 +263,7 @@ const Dashboard = () => {
     return sortedTransactions
   }, [rawData])
 
-  const summaries = useMemo(
+  const summaries = React.useMemo(
     () => {
       const result = {
         today: calculateSummary(transactions, "today"),
@@ -275,12 +275,12 @@ const Dashboard = () => {
     [transactions],
   )
 
-  const categoryBreakdown = useMemo(() => {
+  const categoryBreakdown = React.useMemo(() => {
     const result = getCategoryBreakdown(transactions)
     return result
   }, [transactions])
 
-  const trendData = useMemo(() => {
+  const trendData = React.useMemo(() => {
     const last7Days = Array.from({ length: 7 }, (_, i) => {
       const date = new Date()
       date.setDate(date.getDate() - i)
